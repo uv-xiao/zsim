@@ -34,23 +34,37 @@ const char* logTypeNames[] = {"Harness", "Config", "Process", "Cache", "Mem", "S
 
 FILE* logFdOut = stdout;
 FILE* logFdErr = stderr;
+FILE* logFdTrace = NULL;
 
 static lock_t log_printLock;
 
 
-void InitLog(const char* header, const char* file) {
+
+void InitLog(const char* header, const char* file, const char* traceFile) {
     logHeader = strdup(header);
     futex_init(&log_printLock);
 
     if (file) {
         FILE* fd = fopen(file, "a");
-        if (fd == nullptr) {
+        if (fd == NULL) {
             perror("fopen() failed");
-            panic("Could not open logfile %s", file); //we can panic in InitLog (will dump to stderr)
+            // We can panic in InitLog (will dump to stderr)
+            panic("Could not open logfile %s", file);
         }
         logFdOut = fd;
         logFdErr = fd;
-        //NOTE: We technically never close this fd, but always flush it
+        // NOTE: We technically never close this fd, but always flush it
+    }
+    if (traceFile) {
+        if (strcmp(traceFile, "stderr") == 0)
+            logFdTrace = stderr;
+        else
+            logFdTrace = fopen(traceFile, "a");
+        if (logFdTrace == NULL) {
+            perror("fopen() failed");
+            // We can panic in InitLog (will dump to stderr)
+            panic("Could not open tracefile %s", traceFile);
+        }
     }
 }
 

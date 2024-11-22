@@ -247,11 +247,16 @@ void LaunchProcess(uint32_t procIdx) {
         int nargs = args.size()+1;
         const char* aptrs[nargs];
 
-        trace(Harness, "Calling arguments:");
+        std::stringstream ss;
+        ss << "Calling arguments:";
         for (unsigned int i = 0; i < args.size(); i++) {
-            trace(Harness, " arg%d = %s", i, args[i].c_str());
+            ss << " " << args[i].c_str();
             aptrs[i] = args[i].c_str();
         }
+
+        ss << std::endl;
+        info("%s", ss.str().c_str());
+
         aptrs[nargs-1] = nullptr;
 
         //Chdir to process dir if needed
@@ -312,7 +317,7 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    InitLog("[H] ", nullptr /*log to stdout/err*/);
+    InitLog("[H] ", nullptr /*log to stdout/err*/, "stderr");
     info("Starting zsim, built %s (rev %s)", ZSIM_BUILDDATE, ZSIM_BUILDVERSION);
     startTime = time(nullptr);
 
@@ -325,6 +330,7 @@ int main(int argc, char *argv[]) {
     const char* configFile = realpath(argv[1], nullptr);
     const char* outputDir = getcwd(nullptr, 0); //already absolute
 
+    info("Reading config file %s", configFile);
     Config conf(configFile);
 
     if (atexit(exitHandler)) panic("Could not register exit handler");

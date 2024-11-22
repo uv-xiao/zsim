@@ -78,6 +78,8 @@ KNOB<string> KnobConfigFile(KNOB_MODE_WRITEONCE, "pintool",
 //We need to know these as soon as we start, otherwise we could not log anything until we attach and read the config
 KNOB<bool> KnobLogToFile(KNOB_MODE_WRITEONCE, "pintool",
         "logToFile", "false", "true if all messages should be logged to a logfile instead of stdout/err");
+KNOB<bool> KnobTraceToFile(KNOB_MODE_WRITEONCE, "pintool",
+        "traceToFile", "false", "true if all messages should be traced to a tracefile instead of stdout/err");
 
 KNOB<string> KnobOutputDir(KNOB_MODE_WRITEONCE, "pintool",
         "outputDir", "./", "absolute path to write output files into");
@@ -1054,9 +1056,10 @@ VOID AfterForkInChild(THREADID tid, const CONTEXT* ctxt, VOID * arg) {
 
     char header[64];
     snprintf(header, sizeof(header), "[S %dF] ", procIdx); //append an F to distinguish forked from fork/exec'd
-    std::stringstream logfile_ss;
-    logfile_ss << zinfo->outputDir << "/zsim.log." << procIdx;
-    InitLog(header, KnobLogToFile.Value()? logfile_ss.str().c_str() : nullptr);
+    std::stringstream logfile_ss, tracefile_ss;
+    logfile_ss << zinfo->outputDir << "/zsim.log" << procIdx;
+    tracefile_ss << zinfo->outputDir << "/zsim.trace" << procIdx;
+    InitLog(header, KnobLogToFile.Value()? logfile_ss.str().c_str() : nullptr, KnobTraceToFile.Value()? tracefile_ss.str().c_str() : nullptr);
 
     info("Forked child (tid %d/%d), PID %d, parent PID %d", tid, PIN_ThreadId(), PIN_GetPid(), getppid());
 
@@ -1439,9 +1442,10 @@ int main(int argc, char *argv[]) {
     procIdx = KnobProcIdx.Value();
     char header[64];
     snprintf(header, sizeof(header), "[S %d] ", procIdx);
-    std::stringstream logfile_ss;
+    std::stringstream logfile_ss, tracefile_ss;
     logfile_ss << KnobOutputDir.Value() << "/zsim.log." << procIdx;
-    InitLog(header, KnobLogToFile.Value()? logfile_ss.str().c_str() : nullptr);
+    tracefile_ss << KnobOutputDir.Value() << "/zsim.trace." << procIdx;
+    InitLog(header, KnobLogToFile.Value()? logfile_ss.str().c_str() : nullptr, KnobTraceToFile.Value()? tracefile_ss.str().c_str() : nullptr);
 
     //If parent dies, kill us
     //This avoids leaving strays running in any circumstances, but may be too heavy-handed with arbitrary process hierarchies.

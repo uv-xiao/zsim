@@ -1,4 +1,10 @@
 import os, sys
+
+# import scons_compiledb
+# which python?
+print(sys.executable)
+import scons_compiledb
+
 from os.path import join as joinpath
 
 useIcc = False
@@ -11,11 +17,13 @@ def buildSim(cppFlags, dir, type, pgo=None):
     print("Building " + type + " zsim at " + buildDir)
 
     env = Environment(ENV = os.environ, tools = ['default', 'textfile'])
+
+    scons_compiledb.enable(env)
     env["CPPFLAGS"] = cppFlags
 
     allSrcs = [f for dir, subdirs, files in os.walk("src") for f in Glob(dir + "/*")]
     versionFile = joinpath(buildDir, "version.h")
-    if os.path.exists(".git"):
+    if os.path.exists(".git/index"):
         env.Command(versionFile, allSrcs + [".git/index", "SConstruct"],
             'printf "#define ZSIM_BUILDDATE \\"`date`\\"\\n#define ZSIM_BUILDVERSION \\"`python misc/gitver.py`\\"" >>' + versionFile)
     else:
@@ -71,10 +79,10 @@ def buildSim(cppFlags, dir, type, pgo=None):
             joinpath(PINPATH, "extras/components/include")]
 
     # Perform trace logging?
-    ##env["CPPFLAGS"] += " -D_LOG_TRACE_=1"
+    env["CPPFLAGS"] += " -D_LOG_TRACE_=1"
 
     # Uncomment to get logging messages to stderr
-    ##env["CPPFLAGS"] += " -DDEBUG=1"
+    # env["CPPFLAGS"] += " -DDEBUG=1"
 
     # Be a Warning Nazi? (recommended)
     env["CPPFLAGS"] += " -Werror "
@@ -126,11 +134,10 @@ def buildSim(cppFlags, dir, type, pgo=None):
         env["LIBPATH"] += [joinpath(LIBCONFIGPATH, "lib")]
         env["CPPPATH"] += [joinpath(LIBCONFIGPATH, "include")]
 
-    if "HDF5PATH" in os.environ:
-        HDF5PATH = os.getenv("HDF5PATH")
-        env["CPPPATH"] += [joinpath(HDF5PATH, "include/")]
-        env["LIBPATH"] += [joinpath(HDF5PATH, "lib/")]
-        env["RPATH"]   += [joinpath(HDF5PATH, "lib/")]
+    HDF5PATH = "/usr"
+    env["CPPPATH"] += [joinpath(HDF5PATH, "include/hdf5/serial/")]
+    env["LIBPATH"] += [joinpath(HDF5PATH, "lib/x86_64-linux-gnu/hdf5/serial/")]
+    env["RPATH"]   += [joinpath(HDF5PATH, "lib/x86_64-linux-gnu/hdf5/serial/")]
 
     if "POLARSSLPATH" in os.environ:
         POLARSSLPATH = os.environ["POLARSSLPATH"]
@@ -170,6 +177,7 @@ def buildSim(cppFlags, dir, type, pgo=None):
         env["PINLINKFLAGS"] += useFlags
 
     env.SConscript("src/SConscript", variant_dir=buildDir, exports= {'env' : env.Clone()})
+    env.CompileDb()
 
 ####
 
@@ -229,3 +237,4 @@ elif pgoPhase.startswith("use"):
 else:
     for type in buildTypes:
         buildSim(buildFlags[type], baseBuildDir, type)
+

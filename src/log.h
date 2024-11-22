@@ -65,13 +65,14 @@ extern const char* logTypeNames[];
 extern const char* logHeader;
 extern FILE* logFdOut;
 extern FILE* logFdErr;
+extern FILE* logFdTrace;
 
 /* Set per-process header for log/info/warn/panic messages
  * Calling this is not needed (the default header is ""),
  * but it helps in multi-process runs
  * If file is nullptr or InitLog is not called, logs to stdout/stderr
  */
-void InitLog(const char* header, const char* file = nullptr);
+void InitLog(const char* header, const char* file = nullptr, const char* traceFile = nullptr);
 
 /* Helper class to print expression with values
  * Inpired by Phil Nash's CATCH, https://github.com/philsquared/Catch
@@ -156,12 +157,12 @@ class PrintExpr {
 #ifdef _LOG_TRACE_
 #define trace(type, args...) \
 { \
-    if ( LOG_##type == LOG_Sched) { \
+    if (logFdTrace) { \
         log_lock(); \
-        fprintf(logFdErr, "%sLOG(%s): ", logHeader, logTypeNames[(int) LOG_##type]); \
-        fprintf(logFdErr, args); \
-        fprintf(logFdErr, "\n"); \
-        fflush(logFdErr); \
+        fprintf(logFdTrace, "%sLOG(%s): ", logHeader, logTypeNames[(int) LOG_##type]); \
+        fprintf(logFdTrace, args); \
+        fprintf(logFdTrace, "\n"); \
+        fflush(logFdTrace); \
         log_unlock(); \
     } \
 }

@@ -41,7 +41,7 @@ static bool SkipTimeVirt(PrePatchArgs args) {
 // General virtualization functions, used for both syscall and vsyscall/vdso virtualization
 
 void VirtGettimeofday(uint32_t tid, ADDRINT arg0) {
-    trace(TimeVirt, "[%d] Post-patching gettimeofday", tid);
+    //trace(TimeVirt, "[%d] Post-patching gettimeofday", tid);
     if (arg0) {
         struct timeval tv;
         if (!safeCopy((struct timeval*) arg0, &tv)) {
@@ -136,7 +136,7 @@ void VirtClockGettime(uint32_t tid, ADDRINT arg0, ADDRINT arg1) {
 PostPatchFn PatchGettimeofday(PrePatchArgs args) {
     if (SkipTimeVirt(args)) return NullPostPatch;
     return [](PostPatchArgs args) {
-        trace(TimeVirt, "[%d] Post-patching SYS_gettimeofday", args.tid);
+        //trace(TimeVirt, "[%d] Post-patching SYS_gettimeofday", args.tid);
         ADDRINT arg0 = PIN_GetSyscallArgument(args.ctxt, args.std, 0);
         VirtGettimeofday(args.tid, arg0);
         return PPA_NOTHING;
@@ -146,7 +146,7 @@ PostPatchFn PatchGettimeofday(PrePatchArgs args) {
 PostPatchFn PatchTime(PrePatchArgs args) {
     if (SkipTimeVirt(args)) return NullPostPatch;
     return [](PostPatchArgs args) {
-        trace(TimeVirt, "[%d] Post-patching SYS_time", args.tid);
+        //trace(TimeVirt, "[%d] Post-patching SYS_time", args.tid);
         ADDRINT arg0 = PIN_GetSyscallArgument(args.ctxt, args.std, 0);
         REG out = (REG)PIN_GetSyscallNumber(args.ctxt, args.std);
         VirtTime(args.tid, &out, arg0);
@@ -158,7 +158,7 @@ PostPatchFn PatchTime(PrePatchArgs args) {
 PostPatchFn PatchClockGettime(PrePatchArgs args) {
     if (SkipTimeVirt(args)) return NullPostPatch;
     return [](PostPatchArgs args) {
-        trace(TimeVirt, "[%d] Post-patching SYS_clock_gettime", args.tid);
+        //trace(TimeVirt, "[%d] Post-patching SYS_clock_gettime", args.tid);
         ADDRINT arg0 = PIN_GetSyscallArgument(args.ctxt, args.std, 0);
         ADDRINT arg1 = PIN_GetSyscallArgument(args.ctxt, args.std, 1);
         VirtClockGettime(args.tid, arg0, arg1);
@@ -180,17 +180,17 @@ PostPatchFn PatchNanosleep(PrePatchArgs args) {
     struct timespec* ts;
     uint64_t offsetNsec = 0;
     if (isClock) {
-        trace(TimeVirt, "[%d] Pre-patching SYS_clock_nanosleep", tid);
+        //trace(TimeVirt, "[%d] Pre-patching SYS_clock_nanosleep", tid);
         int flags = (int) PIN_GetSyscallArgument(ctxt, std, 1);
         ts = (struct timespec*) PIN_GetSyscallArgument(ctxt, std, 2);
         if (flags == TIMER_ABSTIME) {
-            trace(TimeVirt, "[%d] SYS_clock_nanosleep requests TIMER_ABSTIME, offsetting", tid);
+            //trace(TimeVirt, "[%d] SYS_clock_nanosleep requests TIMER_ABSTIME, offsetting", tid);
             uint32_t domain = zinfo->procArray[procIdx]->getClockDomain();
             uint64_t simNs = cyclesToNs(zinfo->globPhaseCycles);
             offsetNsec = simNs + zinfo->clockDomainInfo[domain].realtimeOffsetNs;
         }
     } else {
-        trace(TimeVirt, "[%d] Pre-patching SYS_nanosleep", tid);
+        //trace(TimeVirt, "[%d] Pre-patching SYS_nanosleep", tid);
         ts = (struct timespec*) PIN_GetSyscallArgument(ctxt, std, 0);
     }
 
@@ -228,9 +228,9 @@ PostPatchFn PatchNanosleep(PrePatchArgs args) {
         SYSCALL_STANDARD std = args.std;
 
         if (isClock) {
-            trace(TimeVirt, "[%d] Post-patching SYS_clock_nanosleep", tid);
+            //trace(TimeVirt, "[%d] Post-patching SYS_clock_nanosleep", tid);
         } else {
-            trace(TimeVirt, "[%d] Post-patching SYS_nanosleep", tid);
+            //trace(TimeVirt, "[%d] Post-patching SYS_nanosleep", tid);
         }
 
         int res = (int)(-PIN_GetSyscallNumber(ctxt, std));

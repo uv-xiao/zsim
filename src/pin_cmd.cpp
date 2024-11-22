@@ -97,6 +97,13 @@ PinCmd::PinCmd(Config* conf, const char* configFile, const char* outputDir, uint
         args.push_back("-logToFile");
     }
 
+    if (conf->get<bool>("sim.traceToFile", false)) {
+        info("Tracing to file");
+        args.push_back("-traceToFile");
+    } else {
+        info("No tracing");
+    }
+
     //Read the per-process params of the processes run directly by the harness
     while (true) {
         std::stringstream p_ss;
